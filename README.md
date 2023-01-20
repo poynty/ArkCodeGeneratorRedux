@@ -8,6 +8,7 @@ i.e. PullResourceAdditions=
 # Build Tips
 
 1 -> Clone this repository
+
 2 -> Build with Visual Studio (.net 4.7.2), VS Code or the command line.
 
 # Usage
