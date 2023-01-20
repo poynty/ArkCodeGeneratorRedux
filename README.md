@@ -2,6 +2,8 @@
 
 Full rights and credit to the original author of ArkCodeGenerator.exe as provided by https://www.arkmod.net/sourcefiles
 
+# What is it?
+
 This is a cheeky rework of the ArkCodeGenerator. It adds a string to the end of the output file containing the info S+ requires to pull resources.
 i.e. PullResourceAdditions=
 
