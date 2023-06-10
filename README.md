@@ -15,4 +15,4 @@ i.e. PullResourceAdditions=
 
 # Usage
 
-Exactly the same as ArkCodeGenerator
+Exactly the same as ArkCodeGenerator. Place exe in mod directory, for example <Z:\SteamLibrary\steamapps\common\ARK\ShooterGame\Content\Mods\710880648> and run. Note this tool only works in the Mods folder of the game. It will not work correctly in the local workshop cache on your machine. I'll make a new tool to handle both cases at some point.
