@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,15 +9,22 @@ namespace McTash.ArkCodeGeneratorRedux
     public class ACGR
     {
         private static List<string> includes = new List<string>();
+        private static readonly string steamBaseFileURL = @"https://steamcommunity.com/sharedfiles/filedetails/?id=";
+        private static string modNameRegex = ".*?\\0\\0\\0(?<modName>.*?)\\0.*";
+        private static List<string> dinos4SS = new List<string>();
 
         public static void Main(string[] args)
         {
             var files = Directory.GetFiles(Directory.GetCurrentDirectory());
+            string curDir = Directory.GetCurrentDirectory();
+            string[] dirSplit = curDir.Split('\\');
+            string modID = dirSplit[dirSplit.Length - 1];
 
             if (IsArkModFolder(files))
             {
-                var origOutput = MakeSpawnCodes();
-
+                string modInfo = File.ReadAllText("mod.info");
+                string modName = ExtractModName(modInfo);
+                string origOutput = MakeSpawnCodes();
 
                 //Change these bools to determine what is included (resource, counsumable, armor)
                 GenerateIncludedItems(true, true, false);
@@ -26,10 +33,17 @@ namespace McTash.ArkCodeGeneratorRedux
                 string result = GeneratePullList(lines);
                 result = "PullResourceAdditions=" + result;
                 result = result.TrimEnd(',');
-                string newOutput = origOutput + Environment.NewLine + result;
+
+                string sSpawners = GenerateSimpleSpawners();
+
+                result = result + Environment.NewLine + Environment.NewLine + "SimpleSpawners:" + Environment.NewLine + sSpawners + Environment.NewLine;
+
+                string details = GenerateDetails(modID, curDir, modName);
+                string newOutput = details + Environment.NewLine + origOutput + Environment.NewLine + result;
                 try
                 {
-                    File.WriteAllText("Output.txt", newOutput);
+                    string fileName = modName + "_" + modID + ".txt";
+                    File.WriteAllText(fileName, newOutput);
                     Console.WriteLine("Pull list created");
                 }
                 catch (Exception e)
@@ -39,31 +53,17 @@ namespace McTash.ArkCodeGeneratorRedux
             }
         }
 
-        //private static bool ValidateFile(string filePath)
-        //{
-        //    try
-        //    {
-        //        if (!File.Exists(filePath))
-        //        {
-        //            return false;
-        //        }
-
-        //        string fileText = File.ReadAllText(filePath);
-        //        string needle = @"Code generated with ARKMod.net";
-        //        if (fileText.Contains(needle))
-        //        {
-        //            return true;
-        //        }
-
-        //        return false;
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Console.WriteLine($"Failed to validate file{filePath.ToString()} with exception\\r\\n{e.Message}\\r\\n{e.StackTrace}");
-        //    }
-
-        //    return false;
-        //}
+        private static string GenerateDetails(string modID, string modPath, string modName)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(modName);
+            sb.AppendLine();
+            sb.AppendLine("Mod ID: " + modID);
+            sb.AppendLine("Path: " + modPath);
+            sb.AppendLine("Link to Steam workshop page for mod: " + steamBaseFileURL + modID);
+            sb.AppendLine("");
+            return sb.ToString();
+        }
 
         private static void GenerateIncludedItems(bool resource, bool consumable, bool armor)
         {
@@ -111,11 +111,11 @@ namespace McTash.ArkCodeGeneratorRedux
                 }
             }
 
-
             return "";
         }
 
         #region This code is adapted/lifted from https://www.arkmod.net/sourcefiles
+
         //I cannot identify the original author but full credit/rights goes to said author whomever/wherever they are from this point, minor adaptations by me.
 
         private static bool IsArkModFolder(string[] files)
@@ -136,7 +136,6 @@ namespace McTash.ArkCodeGeneratorRedux
 
         private static string MakeSpawnCodes()
         {
-
             StringBuilder output = new StringBuilder();
 
             string str0 = "\nARK Code Generator REDUX";
@@ -146,7 +145,6 @@ namespace McTash.ArkCodeGeneratorRedux
             string str4 = "\n---------------------------------------------------------------------------------Creature Spawncodes-----------------------------------------------------------------------------\n";
             string str5 = "\n---------------------------------------------------------------------------------Tamed Creature Spawncodes-----------------------------------------------------------------------\n";
             string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories);
-
 
             //File.Delete("Output.txt");
             //File.AppendAllText("Output.txt", str1 + Environment.NewLine);
@@ -188,6 +186,7 @@ namespace McTash.ArkCodeGeneratorRedux
                 if (withoutExtension.Contains("Character_BP"))
                 {
                     string str8 = "admincheat SpawnDino \"Blueprint'" + path.Substring(path.IndexOf("Content")).Replace("Content\\", "\\Game\\").Replace(".uasset", "." + withoutExtension).Replace("\\", "/") + "'\" 500 0 0 120";
+                    dinos4SS.Add("Blueprint'" + path.Substring(path.IndexOf("Content")).Replace("Content\\", "\\Game\\").Replace(".uasset", "." + withoutExtension).Replace("\\", "/") + "'");
                     //File.AppendAllText("Output.txt", str8 + Environment.NewLine);
                     output.Append(str8 + Environment.NewLine);
                     Console.WriteLine(str8);
@@ -211,8 +210,29 @@ namespace McTash.ArkCodeGeneratorRedux
 
             return output.ToString();
         }
-        #endregion
+
+        #endregion This code is adapted/lifted from https://www.arkmod.net/sourcefiles
+
+        public static string ExtractModName(string fileData)
+        {
+            Regex regex = new Regex(modNameRegex);
+            var result = regex.Match(fileData);
+            if (result.Success)
+            {
+                return result.Groups["modName"].Value;
+            }
+            return "NOT FOUND";
+        }
+
+        public static string GenerateSimpleSpawners()
+        {
+            string result = "";
+            foreach (var dino in dinos4SS)
+            {
+                result = result + dino + ";";
+            }
+            string clipped = result.TrimEnd(';');
+            return clipped;
+        }
     }
 }
-
-
